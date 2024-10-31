@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кредитный Калькулятор</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .calculator {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        .calculator h2 {
+            text-align: center;
+        }
+        .calculator label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .calculator input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .calculator button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .calculator button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            font-size: 18px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="calculator">
+    <h2>Кредитный Калькулятор</h2>
+    <label for="loanAmount">Сумма кредита (₽):</label>
+    <input type="number" id="loanAmount" placeholder="Введите сумму">
+
+    <label for="rate1">Ставка (первые 1-36 мес.) (%):</label>
+    <input type="number" id="rate1" placeholder="Введите ставку">
+
+    <label for="rate2">Ставка (37-60 мес.) (%):</label>
+    <input type="number" id="rate2" placeholder="Введите ставку">
+
+    <label for="loanTerm">Срок кредита (в месяцах):</label>
+    <input type="number" id="loanTerm" placeholder="Введите срок">
+
+    <button onclick="calculateLoan()">Рассчитать</button>
+
+    <div class="result" id="result"></div>
+    <div id="paymentSchedule"></div>
+</div>
+
+<script>
+    function calculateLoan() {
+        const loanAmount = parseFloat(document.getElementById("loanAmount").value);
+        const rate1 = parseFloat(document.getElementById("rate1").value) / 100;
+        const rate2 = parseFloat(document.getElementById("rate2").value) / 100;
+        const fixedRate = 0.215; // фиксированная ставка 21.5%
+        const loanTerm = parseInt(document.getElementById("loanTerm").value);
+
+        if (isNaN(loanAmount) || isNaN(rate1) || isNaN(rate2) || isNaN(loanTerm) || loanTerm < 1) {
+            document.getElementById("result").innerText = "Пожалуйста, введите корректные значения.";
+            return;
+        }
+
+        let monthlyPayment = 0;
+        let remainingBalance = loanAmount;
+        let schedule = [];
+
+        for (let month = 1; month <= loanTerm; month++) {
+            let currentRate;
+
+            // Устанавливаем процентную ставку в зависимости от месяца
+            if (month <= 36) {
+                currentRate = rate1 / 12;
+            } else if (month <= 60) {
+                currentRate = rate2 / 12;
+            } else {
+                currentRate = fixedRate / 12;
+            }
+
+            // Рассчитываем ежемесячный платеж для данного месяца
+            monthlyPayment = remainingBalance * currentRate / (1 - Math.pow(1 + currentRate, -(loanTerm - month + 1)));
+            const interestPayment = remainingBalance * currentRate;
+            const principalPayment = monthlyPayment - interestPayment;
+            remainingBalance -= principalPayment;
+
+            // Добавляем данные в график платежей
+            schedule.push({
+                month: month,
+                monthlyPayment: monthlyPayment.toFixed(2),
+                interestPayment: interestPayment.toFixed(2),
+                principalPayment: principalPayment.toFixed(2),
+                remainingBalance: remainingBalance.toFixed(2)
+            });
+        }
+
+        // Отображаем общий ежемесячный платеж
+        document.getElementById("result").innerText = `Ежемесячный платеж: ${schedule[0].monthlyPayment} ₽`;
+
+        // Формируем таблицу с графиком платежей
+        let scheduleHTML = `
+            <table>
+                <tr>
+                    <th>Месяц</th>
+                    <th>Ежемесячный платеж (₽)</th>
+                    <th>Процентный платеж (₽)</th>
+                    <th>Основной долг (₽)</th>
+                    <th>Остаток долга (₽)</th>
+                </tr>`;
+        
+        schedule.forEach(payment => {
+            scheduleHTML += `
+                <tr>
+                    <td>${payment.month}</td>
+                    <td>${payment.monthlyPayment}</td>
+                    <td>${payment.interestPayment}</td>
+                    <td>${payment.principalPayment}</td>
+                    <td>${payment.remainingBalance}</td>
+                </tr>`;
+        });
+
+        scheduleHTML += `</table>`;
+        document.getElementById("paymentSchedule").innerHTML = scheduleHTML;
+    }
+</script>
+
+</body>
+</html>
